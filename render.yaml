@@ -1,31 +1,36 @@
 services:
-  # ── Backend Service (FastAPI) ──────────────────────────────────────────────
+  # ── Backend Service (FastAPI Web Service) ───────────────────────────────────
   - type: web
     name: scamshield-backend
     runtime: python
     rootDir: backend
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    plan: free
     healthCheckPath: /api/health
     envVars:
       - key: SERPAPI_KEY
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        fromService:
+          type: web
+          name: scamshield-frontend
+          envVarKey: RENDER_EXTERNAL_URL
 
-  # ── Frontend Service (React + Vite Static Site) ───────────────────────────
+  # ── Frontend Service (React + Vite Static Site) ─────────────────────────────
   - type: web
     name: scamshield-frontend
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    plan: free
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false
+        fromService:
+          type: web
+          name: scamshield-backend
+          envVarKey: RENDER_EXTERNAL_URL
